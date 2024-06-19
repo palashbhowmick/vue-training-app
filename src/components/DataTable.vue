@@ -154,7 +154,6 @@
         if(this.searchText){
           validParams =  this.searchText.length<256;
         } 
-        console.log(validParams);
         return validParams;
       },
 

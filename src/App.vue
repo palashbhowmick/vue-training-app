@@ -1,60 +1,126 @@
 <template>
   <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
-
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
+    <v-container>
+      <div>
+        <v-text-field
+          v-model="serverURL"
+          label="Enter Server URL"
+          placeholder="eg: https://192.168.44.95:8443"
+        ></v-text-field>
+        <v-text-field
+          v-model="token"
+          label="Enter Token"
+          placeholder="Token"
+          type="password"
+        ></v-text-field>
+        <v-btn @click="fetchData" color="primary" elevation="2">Fetch</v-btn>
       </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
-
-    <v-main>
-      <HelloWorld/>
-    </v-main>
+      <v-progress-circular v-if="loading" indeterminate></v-progress-circular>
+      <data-table
+        v-if="!loading"
+        :columns="columns"
+        :headers="headers"
+        @search-text="performSearch"
+        @go-next="goNext"
+        @go-previous="goPrevious"
+      ></data-table>
+    </v-container>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
+import DataTable from "./components/DataTable.vue";
 
 export default {
-  name: 'App',
-
+  name: "App",
   components: {
-    HelloWorld,
+    DataTable,
   },
+  data() {
+    return {
+      serverURL: "",
+      token: "",
+      headers: [
+        { text: "Name", value: "label" },
+        { text: "Table", value: "table.label" },
+        { text: "Database", value: "database.label" },
+        { text: "Schema", value: "schema.label" },
+        { text: "Application", value: "application.label" },
+      ],
+      columns: [],
+      offset: 0,
+      limit: 15,
+      loading: false,
+      searchText: "",
+      selectedCategory: "",
+    };
+  },
+  methods: {
+    async fetchData() {
+      if (!this.serverURL || !this.token) {
+        console.error("Server URL or Token is missing");
+        return;
+      }
 
-  data: () => ({
-    //
-  }),
+      this.loading = true;
+      let endpoint = `${this.serverURL}/api/v2.1/columns?offset=${this.offset}&limit=${this.limit}&sortBy=label&sortOrder=asc`;
+
+      if (
+        this.searchText &&
+        this.selectedCategory &&
+        this.selectedCategory !== "None"
+      ) {
+        this.filterExpression = `${this.selectedCategory.toLowerCase()} co '${encodeURIComponent(
+          this.searchText
+        )}'`;
+        endpoint += `&filter=${encodeURIComponent(this.filterExpression)}`;
+      }
+
+      try {
+        let response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        let columnsData = await response.json();
+        if (columnsData && columnsData.columns) {
+          this.columns = columnsData.columns;
+          // console.log(this.columns)
+        } else {
+          console.warn("No columns data found in response");
+          this.columns = [];
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    goNext() {
+      this.offset += this.limit;
+      this.fetchData();
+    },
+    goPrevious() {
+      if (this.offset > 0) {
+        this.offset -= this.limit;
+        console.log("Offset: ", this.offset);
+      }
+      this.fetchData();
+    },
+    performSearch(search, selectedCategory) {
+      console.log("searchText: ", search);
+      console.log("selectedCategory: ", selectedCategory);
+      this.searchText = search;
+      this.selectedCategory = selectedCategory;
+      this.fetchData();
+    },
+  },
 };
 </script>
+
+<style>
+.v-container {
+  margin-top: 20px;
+}
+</style>

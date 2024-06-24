@@ -15,6 +15,7 @@
     <v-data-table
       :headers="headers"
       :items="tables"
+      :no-data-text="errorMessage"
       :search="searchText"
       :hide-default-footer="true"
       @update:sort-by="updateSortBy"
@@ -51,6 +52,7 @@ export default {
       limit: 15,
       filter: "",
       searchText: "",
+      errorMessage: "",
       sortBy: "label",
       sortOrder: "asc",
     };
@@ -65,7 +67,7 @@ export default {
         let url = `https://192.168.44.85:8443/api/v2.1/tables?offset=${this.offset}&limit=${this.limit}&sortOrder=${this.sortOrder}&sortBy=${this.sortBy}&token=457c64ac5f4808e4977572dbf75ee11590ec567ee99200aa818c8be1caa54f9d
         `;
         if (this.filter) {
-          url += `&filter=${`label co '${this.search}'`}`;
+          url += this.filter;
         }
         const response = await fetch(url);
         const tableData = await response.json();
@@ -76,7 +78,6 @@ export default {
           this.tables = tableData.tables;
           this.errorMessage = "";
         }
-        this.tables = tableData.tables;
       } catch (error) {
         console.error(error);
       }
@@ -97,8 +98,19 @@ export default {
       await this.fetchTables();
     },
     updateSortBy(newSortBy) {
-      this.sortBy = newSortBy;
-      this.fetchTables();
+      if (newSortBy) {
+        if (
+          newSortBy === "schema.label" ||
+          newSortBy === "database.label" ||
+          newSortBy === "application.label"
+        ) {
+          this.sortBy = newSortBy.replace(".label", "");
+        } else {
+          this.sortBy = newSortBy;
+        }
+        this.sortOrder = "asc";
+        this.fetchTables();
+      }
     },
     updateSortOrder(isDesc) {
       this.sortOrder = isDesc ? "desc" : "asc";

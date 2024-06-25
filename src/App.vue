@@ -1,19 +1,12 @@
 <template>
-  <v-app
-    ><DummyTable
-      :items="filteredDesserts"
-      :headers="headers"
-      @onSearch="search = $event"
-    >
-      <template v-slot:description="item">
-        <div>{{item}}</div>
-        <h3>This is a dummy table</h3>
-      </template>
-    </DummyTable>
+  <v-app>
+    <router-link to="/foo">Foo</router-link>
+    <router-link to="/bar">Bar</router-link>
+    <router-view></router-view>
   </v-app>
 </template>
 <script>
-import DummyTable from "./components/DummyTable.vue";
+// import DummyTable from "./components/DummyTable.vue";
 export default {
   data() {
     return {
@@ -76,7 +69,7 @@ export default {
     };
   },
   components: {
-    DummyTable,
+    // DummyTable,
   },
   computed: {
     title() {
